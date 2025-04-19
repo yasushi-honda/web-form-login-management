@@ -50,12 +50,19 @@ function setupSpreadsheet() {
     }
   });
   
-  ss.getSheets().forEach(function(s) {
-    if (!sheetNames.includes(s.getName())) {
-      ss.deleteSheet(s);
-      console.log('不要なシートを削除しました: ' + s.getName());
+  // 既存シートの削除処理
+  try {
+    const sheets = ss.getSheets();
+    for (let i = 0; i < sheets.length; i++) {
+      const sheet = sheets[i];
+      if (!sheetNames.includes(sheet.getName())) {
+        ss.deleteSheet(sheet);
+        console.log('不要なシートを削除しました: ' + sheet.getName());
+      }
     }
-  });
+  } catch (e) {
+    console.log('シート削除処理でエラーが発生しました: ' + e.message);
+  }
   
   return ss.getId();
 }
