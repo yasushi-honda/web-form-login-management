@@ -18,7 +18,11 @@ function testUserRegistrationAndLogin() {
     
     // 2. ユーザー登録
     console.log('【テストステップ2】テストユーザーの登録を行います');
-    const testEmail = 'test@example.com';
+    // メールアドレスにランダムな文字列を付加して重複を避ける
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    const timestamp = new Date().getTime();
+    const testEmail = `test${randomSuffix}_${timestamp}@example.com`;
+    console.log('【テスト情報】テスト用メールアドレス: ' + testEmail);
     const userInfo = registerNewUser(testEmail);
     
     if (userInfo.error) {
