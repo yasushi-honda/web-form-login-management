@@ -3,6 +3,14 @@
  */
 
 /**
+ * GAS用のテストエンドポイント
+ * @return {GoogleAppsScript.Content.TextOutput}
+ */
+function doGet() {
+  return ContentService.createTextOutput('Hello, GAS!');
+}
+
+/**
  * テスト用関数：ユーザー登録とログインの一連のフローをテスト
  * システムの動作確認用にスプレッドシートの確認、ユーザー登録、ログインを順番に実行する。
  * @return {Object} 登録とログインの結果情報
