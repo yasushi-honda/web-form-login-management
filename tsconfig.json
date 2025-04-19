@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "none",
+    "target": "ES2020",
+    "lib": ["es2020"],
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "sourceMap": false,
+    "outDir": "src",
+    "rootDir": "src",
+    "types": ["google-apps-script"]
+  },
+  "exclude": ["node_modules"]
+}
