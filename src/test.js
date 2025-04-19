@@ -3,11 +3,73 @@
  */
 
 /**
- * GAS用のテストエンドポイント
+ * ログイン画面を返すエンドポイント
+ * ドキュメント駆動開発方針に基づき、GASのHTMLサービスでlogin.htmlを返却
+ * @return {GoogleAppsScript.HTML.HtmlOutput}
+ */
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('login');
+}
+
+/**
+ * ログイン認証API（login.htmlから呼び出し）
+ * @param {GoogleAppsScript.Events.DoPost} e
  * @return {GoogleAppsScript.Content.TextOutput}
  */
-function doGet() {
-  return ContentService.createTextOutput('Hello, GAS!');
+function doPost(e) {
+  try {
+    var params = {};
+    if (e && e.postData && e.postData.contents) {
+      params = JSON.parse(e.postData.contents);
+    }
+    var id = params.id;
+    var password = params.password;
+    var result = loginUser(id, password);
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: 'APIエラー: ' + err.message})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * HTMLサービスから呼び出されるログイン処理関数
+ * google.script.runから直接呼び出されるためのエントリポイント
+ * @param {string} id ユーザーID
+ * @param {string} password パスワード
+ * @return {Object} ログイン結果オブジェクト
+ */
+function processLogin(id, password) {
+  try {
+    console.log('【processLogin開始】ID=' + id);
+    
+    // ログイン処理を実行
+    var result = loginUser(id, password);
+    
+    // 結果の詳細をログ出力
+    console.log('【processLogin結果】' + JSON.stringify(result));
+    
+    // 成功の場合は結果を単純なオブジェクトとして返す
+    if (result && result.success) {
+      console.log('【processLogin成功】セッションID=' + result.sessionId);
+      // 単純なオブジェクトを返す（Dateオブジェクトなどは文字列化）
+      return {
+        success: true,
+        sessionId: String(result.sessionId),
+        email: String(result.email),
+        lastLogin: String(result.lastLogin)
+      };
+    } else {
+      // 失敗の場合はエラーメッセージを返す
+      console.log('【processLogin失敗】エラー=' + (result ? result.error : '不明'));
+      return {
+        success: false,
+        error: result ? result.error : 'IDまたはパスワードが正しくありません'
+      };
+    }
+  } catch (err) {
+    console.error('【processLoginエラー】' + err.message);
+    return {success: false, error: err.message};
+  }
 }
 
 /**

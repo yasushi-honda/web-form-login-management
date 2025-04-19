@@ -49,7 +49,7 @@
       <div class="form-group actions">
         <label><input type="checkbox" id="autoLogin"> 自動ログイン</label>
       </div>
-      <button type="submit">ログイン</button>
+      <button type="submit" id="loginButton">ログイン</button>
     </form>
     <div class="register-link">
       新規登録は <a href="#">こちら</a>
@@ -57,7 +57,7 @@
   </div>
   <script>
     // 簡易バリデーションとエラー表示（今後API連携予定）
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const id = document.getElementById('loginId').value.trim();
       const pw = document.getElementById('password').value.trim();
@@ -65,9 +65,59 @@
         showError('IDとパスワードを入力してください');
         return;
       }
-      // 今後: GAS側APIにfetchで認証リクエストを送信
-      showError('（API未接続）ダミーメッセージ: 認証処理は未実装です');
+      // GASのHTMLServiceでは、google.script.runを使ってサーバーサイド関数を直接呼び出す
+      document.getElementById('loginButton').disabled = true; // 重複送信防止
+      
+      // デバッグ用に入力値を表示
+      console.log('入力値:', { id: id, pw: pw });
+      
+      try {
+        // google.script.runでprocessLogin関数を呼び出す
+        google.script.run
+          .withSuccessHandler(function(result) {
+            try {
+              document.getElementById('loginButton').disabled = false;
+              
+              // デバッグ用に結果をコンソールに出力
+              console.log('ログイン結果:', result);
+              console.log('結果の型:', typeof result);
+              
+              // 結果がオブジェクトでない場合は変換
+              if (typeof result !== 'object') {
+                console.warn('結果がオブジェクトではありません:', result);
+                result = { success: false, error: 'サーバーからの不正な応答' };
+              }
+              
+              console.log('処理後の結果:', JSON.stringify(result));
+              
+              // 成功判定（原始値を比較）
+              if (result && String(result.success) === 'true') {
+                // ログイン成功時の処理
+                console.log('ログイン成功判定');
+                alert('ログイン成功！セッションID: ' + result.sessionId);
+                // location.href = 'main.html'; // 必要に応じて遷移
+              } else {
+                console.log('ログイン失敗判定');
+                showError((result && result.error) || 'ログインに失敗しました');
+              }
+            } catch (innerErr) {
+              console.error('結果処理エラー:', innerErr);
+              showError('結果処理中にエラーが発生しました: ' + innerErr.message);
+            }
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('loginButton').disabled = false;
+            console.error('通信エラー:', error);
+            showError('通信エラーが発生しました: ' + (error ? error.message : '不明なエラー'));
+          })
+          .processLogin(id, pw);
+      } catch (outerErr) {
+        document.getElementById('loginButton').disabled = false;
+        console.error('全体エラー:', outerErr);
+        showError('システムエラーが発生しました: ' + outerErr.message);
+      } // サーバーサイドのprocessLogin関数を呼び出す
     });
+
     function showError(msg) {
       const errorDiv = document.getElementById('error');
       errorDiv.textContent = msg;
