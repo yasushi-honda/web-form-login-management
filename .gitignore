@@ -1,0 +1,13 @@
+# Node.js関連
+node_modules/
+npm-debug.log*
+
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScriptビルド成果物
+lib/
+dist/
+
+# OS一時ファイル
+.DS_Store
