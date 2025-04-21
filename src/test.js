@@ -13,12 +13,44 @@ function doGet(e) {
   var params = e ? e.parameter : {};
   var page = params.page || '';
   
+  // HTMLサービスの設定を調整
+  var htmlOutput;
+  
   // ページに応じて適切なHTMLを返却
   if (page === 'signup') {
-    return HtmlService.createHtmlOutputFromFile('signup');
+    htmlOutput = HtmlService.createHtmlOutputFromFile('signup');
   } else {
     // デフォルトはログイン画面
-    return HtmlService.createHtmlOutputFromFile('login');
+    htmlOutput = HtmlService.createHtmlOutputFromFile('login');
+  }
+  
+  // サンドボックスモードとタイトルを設定
+  htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  htmlOutput.setSandboxMode(HtmlService.SandboxMode.IFRAME);
+  htmlOutput.setTitle('フォーム管理システム');
+  
+  return htmlOutput;
+}
+
+/**
+ * サインアップページのHTMLを取得する関数
+ * ログインページからの遷移用
+ * @return {string} サインアップページのHTMLソース
+ */
+function getSignupPage() {
+  // ログ出力
+  console.log('サインアップページの取得を開始');
+  
+  try {
+    // signup.htmlファイルの内容を取得
+    var htmlOutput = HtmlService.createHtmlOutputFromFile('signup');
+    var htmlContent = htmlOutput.getContent();
+    
+    console.log('サインアップページの取得成功');
+    return htmlContent;
+  } catch (error) {
+    console.error('サインアップページの取得中にエラーが発生:', error);
+    throw new Error('サインアップページの取得に失敗しました: ' + error.message);
   }
 }
 

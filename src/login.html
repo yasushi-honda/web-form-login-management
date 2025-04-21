@@ -127,8 +127,24 @@
     // 新規登録リンクのクリックイベント
     document.getElementById('signupLink').addEventListener('click', function(e) {
       e.preventDefault();
-      // GASのHTMLServiceでホストされている場合、サインアップページに遷移
-      window.location.href = '?page=signup';
+      // サインアップ画面を直接表示する
+      try {
+        google.script.run
+          .withSuccessHandler(function(html) {
+            // 現在のページ内容を置き換え
+            document.open();
+            document.write(html);
+            document.close();
+          })
+          .withFailureHandler(function(error) {
+            console.error('画面遷移エラー:', error);
+            alert('画面遷移中にエラーが発生しました');
+          })
+          .getSignupPage();
+      } catch (err) {
+        console.error('エラー:', err);
+        alert('エラーが発生しました: ' + err.message);
+      }
     });
   </script>
 </body>
