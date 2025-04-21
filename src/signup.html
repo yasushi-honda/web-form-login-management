@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新規ユーザー登録</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; }
+    .signup-container {
+      max-width: 400px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 32px 24px;
+    }
+    h2 { text-align: center; margin-bottom: 24px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 6px; }
+    input[type="email"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .error { color: #d32f2f; text-align: center; margin-bottom: 12px; }
+    .success { 
+      color: #388e3c; 
+      text-align: center; 
+      margin: 20px 0;
+      padding: 15px;
+      background: #e8f5e9;
+      border-radius: 4px;
+      border: 1px solid #c8e6c9;
+    }
+    .credential-box {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .credential-item {
+      margin-bottom: 10px;
+    }
+    .credential-label {
+      font-weight: bold;
+      display: inline-block;
+      width: 100px;
+    }
+    button { 
+      width: 100%; 
+      padding: 10px; 
+      background: #1976d2; 
+      color: #fff; 
+      border: none; 
+      border-radius: 4px; 
+      font-size: 1rem; 
+      cursor: pointer; 
+    }
+    button:hover { background: #1565c0; }
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.9rem;
+    }
+    .login-link a {
+      color: #1976d2;
+      text-decoration: none;
+    }
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <h2>新規ユーザー登録</h2>
+    <div id="error" class="error hidden"></div>
+    
+    <!-- 登録フォーム -->
+    <div id="signupForm">
+      <div class="form-group">
+        <label for="email">メールアドレス</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+      </div>
+      <button type="button" id="signupButton">登録</button>
+    </div>
+    
+    <!-- 登録成功時の表示 -->
+    <div id="successResult" class="hidden">
+      <div class="success">
+        登録が完了しました！以下の情報でログインしてください。
+      </div>
+      <div class="credential-box">
+        <div class="credential-item">
+          <span class="credential-label">アクセスID:</span>
+          <span id="userId"></span>
+        </div>
+        <div class="credential-item">
+          <span class="credential-label">パスワード:</span>
+          <span id="userPassword"></span>
+        </div>
+      </div>
+      <div class="login-link">
+        <a href="#" id="loginLink">ログイン画面へ</a>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // エラー表示関数
+    function showError(msg) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = msg;
+      errorDiv.classList.remove('hidden');
+    }
+    
+    // 成功表示関数
+    function showSuccess(result) {
+      // フォームを非表示
+      document.getElementById('signupForm').classList.add('hidden');
+      
+      // 結果表示を表示
+      const successDiv = document.getElementById('successResult');
+      document.getElementById('userId').textContent = result.id;
+      document.getElementById('userPassword').textContent = result.password;
+      successDiv.classList.remove('hidden');
+    }
+    
+    // 登録ボタンのイベントリスナー
+    document.getElementById('signupButton').addEventListener('click', function() {
+      // 入力値の取得とバリデーション
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        showError('メールアドレスを入力してください');
+        return;
+      }
+      
+      // メールアドレスの形式チェック
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        showError('有効なメールアドレスを入力してください');
+        return;
+      }
+      
+      // ボタンを無効化して重複送信を防止
+      document.getElementById('signupButton').disabled = true;
+      
+      // エラー表示をクリア
+      document.getElementById('error').classList.add('hidden');
+      
+      try {
+        // GASのregisterNewUser関数を呼び出す
+        google.script.run
+          .withSuccessHandler(function(result) {
+            try {
+              document.getElementById('signupButton').disabled = false;
+              
+              // デバッグ用にコンソール出力
+              console.log('登録結果:', result);
+              console.log('結果の型:', typeof result);
+              
+              // 結果がオブジェクトでない場合は変換
+              if (typeof result !== 'object') {
+                console.warn('結果がオブジェクトではありません:', result);
+                showError('サーバーからの不正な応答');
+                return;
+              }
+              
+              // 登録成功時
+              if (result && result.id && result.password) {
+                showSuccess(result);
+              } else {
+                // エラーメッセージがある場合はそれを表示
+                showError(result.error || '登録に失敗しました');
+              }
+            } catch (innerErr) {
+              console.error('結果処理エラー:', innerErr);
+              showError('結果処理中にエラーが発生しました: ' + innerErr.message);
+            }
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('signupButton').disabled = false;
+            console.error('通信エラー:', error);
+            showError('通信エラーが発生しました: ' + (error ? error.message : '不明なエラー'));
+          })
+          .registerNewUser(email);
+      } catch (outerErr) {
+        document.getElementById('signupButton').disabled = false;
+        console.error('全体エラー:', outerErr);
+        showError('システムエラーが発生しました: ' + outerErr.message);
+      }
+    });
+    
+    // ログイン画面へのリンク
+    document.getElementById('loginLink').addEventListener('click', function(e) {
+      e.preventDefault();
+      // GASのHTMLサービスでホストされている場合、ルートURLに戻る
+      window.location.href = './';
+    });
+  </script>
+</body>
+</html>

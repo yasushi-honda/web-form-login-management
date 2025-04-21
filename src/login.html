@@ -52,7 +52,7 @@
       <button type="submit" id="loginButton">ログイン</button>
     </form>
     <div class="register-link">
-      新規登録は <a href="#">こちら</a>
+      新規登録は <a href="#" id="signupLink">こちら</a>
     </div>
   </div>
   <script>
@@ -121,8 +121,15 @@
     function showError(msg) {
       const errorDiv = document.getElementById('error');
       errorDiv.textContent = msg;
-      errorDiv.style.display = 'block';
+      errorDiv.classList.remove('hidden');
     }
+    
+    // 新規登録リンクのクリックイベント
+    document.getElementById('signupLink').addEventListener('click', function(e) {
+      e.preventDefault();
+      // GASのHTMLServiceでホストされている場合、サインアップページに遷移
+      window.location.href = '?page=signup';
+    });
   </script>
 </body>
 </html>

@@ -3,12 +3,23 @@
  */
 
 /**
- * ログイン画面を返すエンドポイント
- * ドキュメント駆動開発方針に基づき、GASのHTMLサービスでlogin.htmlを返却
+ * リクエストに応じて適切なHTMLページを返すエンドポイント
+ * ドキュメント駆動開発方針に基づき、GASのHTMLサービスで適切なページを返却
+ * @param {Object} e - リクエストパラメータ
  * @return {GoogleAppsScript.HTML.HtmlOutput}
  */
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('login');
+  // リクエストパラメータの取得
+  var params = e ? e.parameter : {};
+  var page = params.page || '';
+  
+  // ページに応じて適切なHTMLを返却
+  if (page === 'signup') {
+    return HtmlService.createHtmlOutputFromFile('signup');
+  } else {
+    // デフォルトはログイン画面
+    return HtmlService.createHtmlOutputFromFile('login');
+  }
 }
 
 /**
