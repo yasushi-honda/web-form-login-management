@@ -121,6 +121,10 @@
       <!-- フォーム一覧がここに表示されます -->
     </div>
     
+    <div style="text-align: right; margin-bottom: 15px;">
+      <button id="logoutBtn" style="background: #d32f2f; color: #fff; padding: 10px; border: none; border-radius: 4px; cursor: pointer;">ログアウト（自動ログイン解除）</button>
+    </div>
+    
     <div class="nav-buttons">
       <button onclick="goToFormGenerate()">新規フォーム作成</button>
       <button onclick="goToMainMenu()">メインメニューへ</button>
@@ -141,6 +145,22 @@
       // フォーム一覧の取得
       loadForms(sessionId);
     };
+    
+    // ログアウトボタンのクリック処理
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      // 自動ログイン情報をクリア
+      localStorage.removeItem('rememberToken');
+      localStorage.removeItem('formLoginSessionId');
+      localStorage.removeItem('formLoginAutoLogin');
+      console.log('自動ログイン情報をクリアしました');
+      
+      // ログイン画面へリダイレクト
+      google.script.run
+        .withSuccessHandler(function(redirectUrl) {
+          window.top.location.href = redirectUrl;
+        })
+        .redirectToLogin();
+    });
     
     // フォーム一覧を取得して表示
     function loadForms(sessionId) {

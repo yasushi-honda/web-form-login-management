@@ -58,40 +58,64 @@
   <script>
     // ページ読み込み時に自動ログイン処理を実行
     window.onload = function() {
-      // LocalStorageからセッションIDを取得
-      const sessionId = localStorage.getItem('formLoginSessionId');
-      const autoLoginEnabled = localStorage.getItem('formLoginAutoLogin') === 'true';
-      
-      if (sessionId && autoLoginEnabled) {
-        console.log('自動ログイン処理を開始します');
-        // セッションIDによる自動認証
-        google.script.run
-          .withSuccessHandler(function(result) {
-            if (result.success) {
-              console.log('自動ログイン成功');
-              // フォーム一覧画面に遷移
-              google.script.run
-                .withSuccessHandler(function(html) {
-                  document.open();
-                  document.write(html);
-                  document.close();
-                })
-                .withFailureHandler(function(error) {
-                  console.error('画面遷移エラー:', error);
-                  showError('画面遷移中にエラーが発生しました');
-                })
-                .getFormListPage();
-            } else {
-              console.log('自動ログイン失敗: セッション期限切れまたは無効');
-              // 自動ログイン失敗時はLocalStorageをクリア
-              localStorage.removeItem('formLoginSessionId');
-              localStorage.removeItem('formLoginAutoLogin');
-            }
-          })
-          .withFailureHandler(function(error) {
-            console.error('自動ログイン処理エラー:', error);
-          })
-          .authenticateBySession(sessionId);
+      try {
+        // LocalStorageから永続トークンを取得
+        const rememberToken = localStorage.getItem('rememberToken');
+        const autoLoginEnabled = localStorage.getItem('formLoginAutoLogin') === 'true';
+        
+        console.log('自動ログイン状態確認:', { 
+          rememberToken: rememberToken ? rememberToken.substring(0, 8) + '...' : 'なし', 
+          autoLoginEnabled: autoLoginEnabled 
+        });
+        
+        if (rememberToken && autoLoginEnabled) {
+          console.log('永続トークンによる自動ログイン処理を開始します');
+          // 永続トークンによる自動認証
+          google.script.run
+            .withSuccessHandler(function(result) {
+              try {
+                console.log('自動ログイン結果:', result);
+                
+                if (result && result.success) {
+                  console.log('自動ログイン成功');
+                  
+                  // 新しいセッションIDを保存
+                  localStorage.setItem('formLoginSessionId', result.sessionId);
+                  
+                  // フォーム一覧画面に遷移
+                  google.script.run
+                    .withSuccessHandler(function(html) {
+                      document.open();
+                      document.write(html);
+                      document.close();
+                    })
+                    .withFailureHandler(function(error) {
+                      console.error('画面遷移エラー:', error);
+                      showError('画面遷移中にエラーが発生しました: ' + error);
+                    })
+                    .getFormListPage();
+                } else {
+                  console.log('自動ログイン失敗: 永続トークンが無効');
+                  // 自動ログイン失敗時はLocalStorageをクリア
+                  localStorage.removeItem('rememberToken');
+                  localStorage.removeItem('formLoginSessionId');
+                  localStorage.removeItem('formLoginAutoLogin');
+                  showError('自動ログイン情報が無効です。再ログインしてください。');
+                }
+              } catch (innerErr) {
+                console.error('自動ログイン結果処理エラー:', innerErr);
+                showError('自動ログイン処理中にエラーが発生しました: ' + innerErr.message);
+              }
+            })
+            .withFailureHandler(function(error) {
+              console.error('自動ログイン処理エラー:', error);
+              showError('自動ログイン処理中にエラーが発生しました: ' + error);
+            })
+            .processRememberToken(rememberToken);
+        }
+      } catch (e) {
+        console.error('ページ読み込み時のエラー:', e);
+        showError('ページ読み込み時にエラーが発生しました: ' + e.message);
       }
     };
     
@@ -138,10 +162,20 @@
                 
                 // 自動ログイン設定の保存
                 if (autoLogin) {
+                  // セッションIDと自動ログインフラグを保存
                   localStorage.setItem('formLoginSessionId', result.sessionId);
                   localStorage.setItem('formLoginAutoLogin', 'true');
+                  
+                  // 永続トークンが返却された場合は保存
+                  if (result.rememberToken) {
+                    localStorage.setItem('rememberToken', result.rememberToken);
+                    console.log('永続トークンを保存しました:', result.rememberToken.substring(0, 8) + '...');
+                  }
+                  
                   console.log('自動ログイン情報を保存しました');
                 } else {
+                  // 自動ログインが無効な場合はクリア
+                  localStorage.removeItem('rememberToken');
                   localStorage.removeItem('formLoginSessionId');
                   localStorage.removeItem('formLoginAutoLogin');
                 }
@@ -172,12 +206,12 @@
             console.error('通信エラー:', error);
             showError('通信エラーが発生しました: ' + (error ? error.message : '不明なエラー'));
           })
-          .processLogin(id, pw);
+          .processLogin(id, pw, autoLogin); // 自動ログインフラグを渡す
       } catch (outerErr) {
         document.getElementById('loginButton').disabled = false;
         console.error('全体エラー:', outerErr);
         showError('システムエラーが発生しました: ' + outerErr.message);
-      } // サーバーサイドのprocessLogin関数を呼び出す
+      }
     });
 
     function showError(msg) {

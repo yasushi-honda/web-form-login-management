@@ -19,14 +19,21 @@ function doGet(e) {
   
   // セッションIDが指定されている場合は自動ログインを試行
   if (sessionId && page === '') {
-    var authResult = authenticateBySession(sessionId);
-    if (authResult && authResult.success) {
-      // 自動ログイン成功時はフォーム一覧ページを表示
-      page = 'list';
-      console.log('【自動ログイン成功】ユーザーID: ' + authResult.userId);
-    } else {
-      // 自動ログイン失敗時はログインページを表示
-      console.log('【自動ログイン失敗】セッションID: ' + sessionId);
+    try {
+      // userManagement.jsのauthenticateBySession関数を呼び出す
+      console.log('セッションIDによる認証を試行します: ' + sessionId);
+      var authResult = authenticateBySession(sessionId);
+      
+      if (authResult && authResult.success) {
+        // 自動ログイン成功時はフォーム一覧ページを表示
+        page = 'list';
+        console.log('【自動ログイン成功】ユーザーID: ' + authResult.userId);
+      } else {
+        // 自動ログイン失敗時はログインページを表示
+        console.log('【自動ログイン失敗】セッションID: ' + sessionId);
+      }
+    } catch (e) {
+      console.error('【エラー】自動ログイン処理中に例外が発生しました: ' + e.message);
     }
   }
   
@@ -100,11 +107,12 @@ function doPost(e) {
  * google.script.runから直接呼び出されるためのエントリポイント
  * @param {string} id ユーザーID
  * @param {string} password パスワード
+ * @param {boolean} autoLogin 自動ログインを有効にするかどうか
  * @return {Object} ログイン結果オブジェクト
  */
-function processLogin(id, password) {
+function processLogin(id, password, autoLogin) {
   try {
-    console.log('【processLogin開始】ID=' + id);
+    console.log('【processLogin開始】ID=' + id + ', 自動ログイン=' + autoLogin);
     
     // ログイン処理を実行
     var result = loginUser(id, password);
@@ -115,12 +123,25 @@ function processLogin(id, password) {
     // 成功の場合は結果を単純なオブジェクトとして返す
     if (result && result.success) {
       console.log('【processLogin成功】セッションID=' + result.sessionId);
+      
+      // 自動ログインが有効な場合は永続トークンを生成
+      let rememberToken = '';
+      if (autoLogin) {
+        // 永続トークンを生成
+        rememberToken = generateRememberToken(id);
+        // ユーザーに紐づけて保存
+        saveRememberToken(id, rememberToken);
+        console.log('【自動ログイン設定】永続トークンを生成しました');
+      }
+      
       // 単純なオブジェクトを返す（Dateオブジェクトなどは文字列化）
       return {
         success: true,
         sessionId: String(result.sessionId),
         email: String(result.email),
-        lastLogin: String(result.lastLogin)
+        lastLogin: String(result.lastLogin),
+        rememberToken: rememberToken, // 永続トークンを返す
+        userId: id // ユーザーIDも返す
       };
     } else {
       // 失敗の場合はエラーメッセージを返す
@@ -195,6 +216,57 @@ function redirectToLogin() {
     // エラーの場合は空の文字列を返す
     return '';
   }
+}
+
+/**
+ * 永続トークンによる認証を処理する関数
+ * 自動ログイン機能で使用される
+ * @param {string} token 永続トークン
+ * @return {Object} 認証結果とユーザー情報
+ */
+function processRememberToken(token) {
+  try {
+    console.log('【永続トークン認証開始】');
+    
+    // 永続トークンによる認証を実行
+    var result = authenticateByRememberToken(token);
+    
+    // 結果の詳細をログ出力
+    console.log('【永続トークン認証結果】' + JSON.stringify(result));
+    
+    // 成功の場合は結果を単純なオブジェクトとして返す
+    if (result && result.success) {
+      console.log('【永続トークン認証成功】ユーザーID=' + result.userId);
+      
+      // 単純なオブジェクトを返す（Dateオブジェクトなどは文字列化）
+      return {
+        success: true,
+        sessionId: String(result.sessionId),
+        userId: String(result.userId),
+        email: String(result.email),
+        lastLogin: String(result.lastLogin)
+      };
+    } else {
+      // 失敗の場合はエラーメッセージを返す
+      console.log('【永続トークン認証失敗】エラー=' + (result ? result.error : '不明'));
+      return {
+        success: false,
+        error: result ? result.error : '自動ログイントークンが無効です'
+      };
+    }
+  } catch (err) {
+    console.error('【永続トークン認証エラー】' + err.message);
+    return {success: false, error: err.message};
+  }
+}
+
+/**
+ * ベースURLを取得する
+ * リダイレクト用
+ * @return {string} WebアプリのベースURL
+ */
+function getBaseUrl() {
+  return ScriptApp.getService().getUrl();
 }
 
 /**
