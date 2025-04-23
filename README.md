@@ -7,7 +7,7 @@ Google Apps Script を TypeScript + clasp で管理する Web フォームログ
 - ユーザー登録・認証機能
 - テンプレートフォームからのユーザー専用フォーム自動生成
 - フォーム一覧表示機能
-- 自動ログイン機能（開発中）
+- 自動ログイン機能
 
 ## 開発環境構築
 
@@ -26,6 +26,7 @@ Google Apps Script を TypeScript + clasp で管理する Web フォームログ
 ├ package.json
 ├ tsconfig.json
 ├ src/              # ソースコード
+│ ├ authService.js     # 認証サービス機能
 │ ├ formGenerate.html  # フォーム生成画面
 │ ├ formList.html      # フォーム一覧画面
 │ ├ formManagement.js  # フォーム管理機能
@@ -48,6 +49,7 @@ Google Apps Script を TypeScript + clasp で管理する Web フォームログ
 - メールアドレスでの新規ユーザー登録
 - ID/パスワードによる認証
 - セッション管理
+- 永続トークンによる自動ログイン機能
 
 ### 2. フォーム管理機能
 - テンプレートフォームからユーザー専用フォームの自動生成
@@ -80,6 +82,6 @@ const formUrl = newForm.getPublishedUrl();
 
 ## 今後の開発予定
 
-- 自動ログイン機能の実装
 - フォームボタン機能の実装
 - ユーザー管理機能の拡張
+- 自動ログイン機能のセキュリティ強化（トークンの期限設定など）
