@@ -214,14 +214,25 @@
         // ボタンを無効化して重複クリックを防止
         this.disabled = true;
         
-        // GAS WebアプリのルートURLにリダイレクト
-        // 現在のURLからクエリパラメータを除去してルートURLを取得
-        var currentUrl = window.location.href;
-        var baseUrl = currentUrl.split('?')[0];
-        
-        // ルートURLにリダイレクト
-        console.log('ログイン画面にリダイレクトします: ' + baseUrl);
-        window.top.location.href = baseUrl;
+        // google.script.runを使用してログイン画面に遷移する関数を実行
+        google.script.run
+          .withSuccessHandler(function(redirectUrl) {
+            // リダイレクトURLが返された場合はそこに遷移
+            if (redirectUrl) {
+              console.log('リダイレクト先URLを受け取りました:', redirectUrl);
+              window.top.location.href = redirectUrl;
+            } else {
+              // リダイレクトURLがない場合はページを再読み込み
+              console.log('ページを再読み込みします');
+              window.top.location.reload();
+            }
+          })
+          .withFailureHandler(function(error) {
+            console.error('画面遷移エラー:', error);
+            alert('ログイン画面への遷移中にエラーが発生しました');
+            document.getElementById('loginLink').disabled = false;
+          })
+          .redirectToLogin();
       } catch (err) {
         console.error('ログイン画面遷移処理エラー:', err);
         alert('エラーが発生しました: ' + err.message);

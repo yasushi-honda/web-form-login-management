@@ -147,6 +147,31 @@ function getLoginPage() {
 }
 
 /**
+ * ログイン画面へのリダイレクトを処理する関数
+ * サインアップ画面からの遷移用
+ * @return {string} リダイレクト先URL
+ */
+function redirectToLogin() {
+  console.log('ログイン画面へのリダイレクトを処理します');
+  
+  try {
+    // スクリプトのURLを取得
+    var scriptUrl = ScriptApp.getService().getUrl();
+    console.log('スクリプトURL:', scriptUrl);
+    
+    // クエリパラメータを除去してベースURLを取得
+    var baseUrl = scriptUrl.split('?')[0];
+    
+    console.log('ログイン画面へのリダイレクトURL:', baseUrl);
+    return baseUrl;
+  } catch (error) {
+    console.error('リダイレクトURLの取得中にエラーが発生:', error);
+    // エラーの場合は空の文字列を返す
+    return '';
+  }
+}
+
+/**
  * テスト用関数：ユーザー登録とログインの一連のフローをテスト
  * システムの動作確認用にスプレッドシートの確認、ユーザー登録、ログインを順番に実行する。
  * @return {Object} 登録とログインの結果情報
