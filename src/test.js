@@ -123,14 +123,13 @@ function processLogin(id, password) {
 /**
  * ログインページを表示する関数
  * サインアップページからの遷移用
- * @return {GoogleAppsScript.HTML.HtmlOutput} ログインページのHtmlOutputオブジェクト
+ * @return {string} ログインページのHTMLソース
  */
 function getLoginPage() {
-  // ログ出力
-  console.log('ログインページの取得を開始');  
+  console.log('ログインページの取得を開始');
   
   try {
-    // login.htmlファイルからHtmlOutputオブジェクトを作成
+    // login.htmlファイルの内容を取得
     var htmlOutput = HtmlService.createHtmlOutputFromFile('login');
     
     // サンドボックスモードとタイトルを設定
@@ -138,8 +137,11 @@ function getLoginPage() {
     htmlOutput.setSandboxMode(HtmlService.SandboxMode.IFRAME);
     htmlOutput.setTitle('フォーム管理システム - ログイン');
     
+    // HTMLコンテンツを文字列として取得
+    var htmlContent = htmlOutput.getContent();
+    
     console.log('ログインページの取得成功');
-    return htmlOutput;
+    return htmlContent;
   } catch (error) {
     console.error('ログインページの取得中にエラーが発生:', error);
     throw new Error('ログインページの取得に失敗しました: ' + error.message);
@@ -162,8 +164,11 @@ function redirectToLogin() {
     // クエリパラメータを除去してベースURLを取得
     var baseUrl = scriptUrl.split('?')[0];
     
-    console.log('ログイン画面へのリダイレクトURL:', baseUrl);
-    return baseUrl;
+    // ログイン画面を表示するためのクエリパラメータを追加
+    var loginUrl = baseUrl + '?page=login';
+    
+    console.log('ログイン画面へのリダイレクトURL:', loginUrl);
+    return loginUrl;
   } catch (error) {
     console.error('リダイレクトURLの取得中にエラーが発生:', error);
     // エラーの場合は空の文字列を返す

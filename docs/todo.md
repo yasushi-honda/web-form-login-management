@@ -18,6 +18,10 @@
   - [ ] セッションによる認証機能
   - [ ] テスト・動作確認
 - [ ] フォーム生成機能の実装
+- [x] サインアップ後のログイン画面遷移404エラー対応
+  - [x] redirectToLogin関数にクエリパラメータ「?page=login」を付与するよう修正
+  - [x] signup.htmlのログイン画面遷移処理をURLリダイレクト方式からHTML直接取得方式に変更
+  - [x] getLoginPage関数を修正し、HTMLコンテンツを文字列として返すように変更
 
 ---
 
@@ -43,6 +47,36 @@
 - 画面間の遷移には`window.location.href`ではなく`google.script.run`を使用する必要がある。
 - 遷移先の画面のHTMLを取得し、`document.write()`で書き換えることで実現する。
 - 画面遷移時にはボタンの無効化など、重複クリック防止の対策が必要。
+- GASのWebアプリでは、HTMLファイルを直接参照せず、常にエンドポイント（/exec）経由でアクセスする必要がある。
+- ページ遷移時には`?page=ページ名`のようなクエリパラメータを付与して、doGet側で適切なHTMLを返すことが重要。
+
+### GASのWebアプリでの画面遷移の実装方法（2025/04/23追記）
+
+画面遷移には主に以下の2つの方法があります：
+
+1. **HTMLコンテンツ直接取得方式**
+   ```javascript
+   google.script.run
+     .withSuccessHandler(function(htmlContent) {
+       document.open();
+       document.write(htmlContent);
+       document.close();
+     })
+     .getXxxPage(); // ページ取得関数
+   ```
+   - メリット：ページ遷移がスムーズで、リダイレクトによる余分なリクエストがない
+   - 注意点：サーバー側の関数は文字列としてHTMLコンテンツを返す必要がある
+
+2. **URLリダイレクト方式**
+   ```javascript
+   google.script.run
+     .withSuccessHandler(function(redirectUrl) {
+       window.top.location.href = redirectUrl;
+     })
+     .redirectToXxx(); // リダイレクトURL取得関数
+   ```
+   - メリット：URL履歴が正しく更新される
+   - 注意点：クエリパラメータを正しく付与し、doGet側で適切にハンドリングする必要がある
 
 ## テスト観点
 - WebアプリURLでログイン画面が正しく表示されること

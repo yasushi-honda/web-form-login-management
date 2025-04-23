@@ -214,25 +214,35 @@
         // ボタンを無効化して重複クリックを防止
         this.disabled = true;
         
-        // google.script.runを使用してログイン画面に遷移する関数を実行
+        // 方法1: HTMLコンテンツを直接取得して表示する方法
         google.script.run
-          .withSuccessHandler(function(redirectUrl) {
-            // リダイレクトURLが返された場合はそこに遷移
-            if (redirectUrl) {
-              console.log('リダイレクト先URLを受け取りました:', redirectUrl);
-              window.top.location.href = redirectUrl;
-            } else {
-              // リダイレクトURLがない場合はページを再読み込み
-              console.log('ページを再読み込みします');
-              window.top.location.reload();
-            }
+          .withSuccessHandler(function(htmlContent) {
+            console.log('ログイン画面のHTMLを受け取りました');
+            // 現在のページ内容を置き換え
+            document.open();
+            document.write(htmlContent);
+            document.close();
           })
           .withFailureHandler(function(error) {
             console.error('画面遷移エラー:', error);
             alert('ログイン画面への遷移中にエラーが発生しました');
             document.getElementById('loginLink').disabled = false;
           })
+          .getLoginPage();
+        
+        /* 方法2: URLリダイレクト方式（現在は使用していません）
+        google.script.run
+          .withSuccessHandler(function(redirectUrl) {
+            if (redirectUrl) {
+              console.log('リダイレクト先URLを受け取りました:', redirectUrl);
+              window.top.location.href = redirectUrl;
+            } else {
+              console.log('ページを再読み込みします');
+              window.top.location.reload();
+            }
+          })
           .redirectToLogin();
+        */
       } catch (err) {
         console.error('ログイン画面遷移処理エラー:', err);
         alert('エラーが発生しました: ' + err.message);
