@@ -56,11 +56,52 @@
     </div>
   </div>
   <script>
-    // 簡易バリデーションとエラー表示（今後API連携予定）
+    // ページ読み込み時に自動ログイン処理を実行
+    window.onload = function() {
+      // LocalStorageからセッションIDを取得
+      const sessionId = localStorage.getItem('formLoginSessionId');
+      const autoLoginEnabled = localStorage.getItem('formLoginAutoLogin') === 'true';
+      
+      if (sessionId && autoLoginEnabled) {
+        console.log('自動ログイン処理を開始します');
+        // セッションIDによる自動認証
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              console.log('自動ログイン成功');
+              // フォーム一覧画面に遷移
+              google.script.run
+                .withSuccessHandler(function(html) {
+                  document.open();
+                  document.write(html);
+                  document.close();
+                })
+                .withFailureHandler(function(error) {
+                  console.error('画面遷移エラー:', error);
+                  showError('画面遷移中にエラーが発生しました');
+                })
+                .getFormListPage();
+            } else {
+              console.log('自動ログイン失敗: セッション期限切れまたは無効');
+              // 自動ログイン失敗時はLocalStorageをクリア
+              localStorage.removeItem('formLoginSessionId');
+              localStorage.removeItem('formLoginAutoLogin');
+            }
+          })
+          .withFailureHandler(function(error) {
+            console.error('自動ログイン処理エラー:', error);
+          })
+          .authenticateBySession(sessionId);
+      }
+    };
+    
+    // ログインフォーム送信処理
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const id = document.getElementById('loginId').value.trim();
       const pw = document.getElementById('password').value.trim();
+      const autoLogin = document.getElementById('autoLogin').checked;
+      
       if (!id || !pw) {
         showError('IDとパスワードを入力してください');
         return;
@@ -69,7 +110,7 @@
       document.getElementById('loginButton').disabled = true; // 重複送信防止
       
       // デバッグ用に入力値を表示
-      console.log('入力値:', { id: id, pw: pw });
+      console.log('入力値:', { id: id, pw: pw, autoLogin: autoLogin });
       
       try {
         // google.script.runでprocessLogin関数を呼び出す
@@ -94,8 +135,29 @@
               if (result && String(result.success) === 'true') {
                 // ログイン成功時の処理
                 console.log('ログイン成功判定');
-                alert('ログイン成功！セッションID: ' + result.sessionId);
-                // location.href = 'main.html'; // 必要に応じて遷移
+                
+                // 自動ログイン設定の保存
+                if (autoLogin) {
+                  localStorage.setItem('formLoginSessionId', result.sessionId);
+                  localStorage.setItem('formLoginAutoLogin', 'true');
+                  console.log('自動ログイン情報を保存しました');
+                } else {
+                  localStorage.removeItem('formLoginSessionId');
+                  localStorage.removeItem('formLoginAutoLogin');
+                }
+                
+                // フォーム一覧画面に遷移
+                google.script.run
+                  .withSuccessHandler(function(html) {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                  })
+                  .withFailureHandler(function(error) {
+                    console.error('画面遷移エラー:', error);
+                    showError('画面遷移中にエラーが発生しました');
+                  })
+                  .getFormListPage();
               } else {
                 console.log('ログイン失敗判定');
                 showError((result && result.error) || 'ログインに失敗しました');

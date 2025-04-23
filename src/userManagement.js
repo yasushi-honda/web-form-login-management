@@ -154,3 +154,75 @@ function loginUser(id, password) {
     return { success: false, error: 'システムエラーが発生しました。管理者にお問い合わせください。' };
   }
 }
+
+/**
+ * セッションIDによるユーザー認証
+ * セッションIDを受け取り、有効なセッションかどうかを確認する。
+ * 自動ログイン機能で使用される。
+ * 
+ * @param {string} sessionId - セッションID
+ * @return {Object} 認証結果とユーザー情報
+ */
+function authenticateBySession(sessionId) {
+  // 入力値のバリデーション
+  if (!sessionId) {
+    console.error('【エラー】セッションIDが指定されていません');
+    return { success: false, error: 'セッションIDが必要です' };
+  }
+
+  // スプレッドシートの存在確認
+  const props = PropertiesService.getScriptProperties();
+  const ssId = props.getProperty('SPREADSHEET_ID');
+  
+  if (!ssId) {
+    console.error('【エラー】スプレッドシートが未作成です。setupSpreadsheet()を先に実行してください');
+    return { success: false, error: 'システムエラー: データベースが初期化されていません' };
+  }
+  
+  try {
+    console.log('【処理開始】セッション認証処理を開始します: ' + sessionId);
+    
+    // スプレッドシートを開く
+    const ss = SpreadsheetApp.openById(ssId);
+    const sheet = ss.getSheetByName('ユーザー管理シート');
+    
+    if (!sheet) {
+      console.error('【エラー】ユーザー管理シートが見つかりません');
+      return { success: false, error: 'システムエラー: ユーザー管理シートが存在しません' };
+    }
+    
+    // セッションIDを照合
+    console.log('【処理中】セッションIDを照合します');
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) {
+      console.warn('【警告】ユーザーデータが存在しません');
+      return { success: false, error: '登録されたユーザーがありません' };
+    }
+    
+    // セッションIDは7列目（インデックス6）
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][6] === sessionId) {
+        // セッション有効性確認（将来的には期限切れチェックを追加予定）
+        
+        // 最終ログイン日時を更新
+        const now = new Date();
+        sheet.getRange(i + 1, 5).setValue(now); // 最終ログイン日時
+        
+        console.log('【処理完了】セッション認証成功: ID=' + data[i][0] + ', メール=' + data[i][2]);
+        return { 
+          success: true, 
+          userId: data[i][0],
+          email: data[i][2],
+          lastLogin: now
+        };
+      }
+    }
+    
+    console.warn('【警告】セッション認証失敗: 無効なセッションID');
+    return { success: false, error: 'セッションが無効です。再ログインしてください。' };
+  } catch (e) {
+    console.error('【エラー】セッション認証中に例外が発生しました: ' + e.message);
+    return { success: false, error: 'システムエラーが発生しました。管理者にお問い合わせください。' };
+  }
+}

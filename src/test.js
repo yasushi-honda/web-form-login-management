@@ -12,9 +12,23 @@ function doGet(e) {
   // リクエストパラメータの取得
   var params = e ? e.parameter : {};
   var page = params.page || '';
+  var sessionId = params.sessionId || '';
   
   // HTMLサービスの設定を調整
   var htmlOutput;
+  
+  // セッションIDが指定されている場合は自動ログインを試行
+  if (sessionId && page === '') {
+    var authResult = authenticateBySession(sessionId);
+    if (authResult && authResult.success) {
+      // 自動ログイン成功時はフォーム一覧ページを表示
+      page = 'list';
+      console.log('【自動ログイン成功】ユーザーID: ' + authResult.userId);
+    } else {
+      // 自動ログイン失敗時はログインページを表示
+      console.log('【自動ログイン失敗】セッションID: ' + sessionId);
+    }
+  }
   
   // ページに応じて適切なHTMLを返却
   if (page === 'signup') {
