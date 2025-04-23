@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フォーム一覧</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    .form-table th, .form-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .form-table th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+      color: #495057;
+    }
+    .form-table tr:hover {
+      background-color: #f1f1f1;
+    }
+    .form-link {
+      color: #3498db;
+      text-decoration: none;
+    }
+    .form-link:hover {
+      text-decoration: underline;
+    }
+    .no-forms {
+      text-align: center;
+      padding: 30px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      color: #6c757d;
+      font-style: italic;
+    }
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    .nav-buttons button {
+      width: 48%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    .nav-buttons button:hover {
+      background-color: #2980b9;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .loading::after {
+      content: "読み込み中...";
+      display: inline-block;
+      animation: ellipsis 1.5s infinite;
+    }
+    @keyframes ellipsis {
+      0% { content: "読み込み中."; }
+      33% { content: "読み込み中.."; }
+      66% { content: "読み込み中..."; }
+    }
+    .error {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      border-radius: 4px;
+      display: none;
+    }
+    .date-column {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>フォーム一覧</h1>
+    
+    <div id="loading" class="loading"></div>
+    <div id="error" class="error"></div>
+    
+    <div id="formsContainer">
+      <!-- フォーム一覧がここに表示されます -->
+    </div>
+    
+    <div class="nav-buttons">
+      <button onclick="goToFormGenerate()">新規フォーム作成</button>
+      <button onclick="goToMainMenu()">メインメニューへ</button>
+    </div>
+  </div>
+
+  <script>
+    // ページ読み込み時の処理
+    window.onload = function() {
+      // セッションIDの取得
+      const sessionId = localStorage.getItem('formLoginSessionId');
+      if (!sessionId) {
+        // セッションIDがない場合はログイン画面にリダイレクト
+        redirectToLogin();
+        return;
+      }
+      
+      // フォーム一覧の取得
+      loadForms(sessionId);
+    };
+    
+    // フォーム一覧を取得して表示
+    function loadForms(sessionId) {
+      showLoading(true);
+      hideError();
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showLoading(false);
+          
+          if (result.success) {
+            displayForms(result.forms);
+          } else {
+            showError(result.error || 'フォーム情報の取得に失敗しました');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showError('エラーが発生しました: ' + error);
+        })
+        .getUserForms(sessionId);
+    }
+    
+    // フォーム一覧を表示
+    function displayForms(forms) {
+      const container = document.getElementById('formsContainer');
+      
+      if (!forms || forms.length === 0) {
+        // フォームがない場合
+        container.innerHTML = '<div class="no-forms">生成済みのフォームがありません。「新規フォーム作成」ボタンから作成してください。</div>';
+        return;
+      }
+      
+      // フォーム一覧テーブルの作成
+      let html = '<table class="form-table">';
+      html += '<thead><tr><th>フォーム種類</th><th>作成日時</th><th>操作</th></tr></thead>';
+      html += '<tbody>';
+      
+      forms.forEach(function(form) {
+        const createdDate = new Date(form.createdAt);
+        const formattedDate = createdDate.toLocaleString('ja-JP', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        html += '<tr>';
+        html += '<td>' + escapeHtml(form.type) + '</td>';
+        html += '<td class="date-column">' + formattedDate + '</td>';
+        html += '<td><a href="' + form.url + '" target="_blank" class="form-link">開く</a></td>';
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    // HTMLエスケープ処理
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // フォーム生成画面へ遷移
+    function goToFormGenerate() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(function(htmlContent) {
+          document.open();
+          document.write(htmlContent);
+          document.close();
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showError('画面遷移に失敗しました: ' + error);
+        })
+        .getFormGeneratePage();
+    }
+    
+    // メインメニュー画面へ遷移（未実装の場合はログイン画面へ）
+    function goToMainMenu() {
+      showLoading(true);
+      
+      // メインメニューが実装されていない場合はログイン後画面に遷移
+      google.script.run
+        .withSuccessHandler(function(htmlContent) {
+          document.open();
+          document.write(htmlContent);
+          document.close();
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showError('画面遷移に失敗しました: ' + error);
+        })
+        .getMainMenuPage();
+    }
+    
+    // ログイン画面へリダイレクト
+    function redirectToLogin() {
+      google.script.run
+        .withSuccessHandler(function(redirectUrl) {
+          window.top.location.href = redirectUrl;
+        })
+        .redirectToLogin();
+    }
+    
+    // エラーメッセージの表示
+    function showError(message) {
+      const errorElement = document.getElementById('error');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+    }
+    
+    // エラーメッセージを非表示
+    function hideError() {
+      document.getElementById('error').style.display = 'none';
+    }
+    
+    // ローディング表示の切り替え
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

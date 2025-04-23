@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フォーム生成</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    select, button {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    select {
+      background-color: #fff;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .form-link {
+      margin-top: 15px;
+    }
+    .form-link a {
+      color: #3498db;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .form-link a:hover {
+      text-decoration: underline;
+    }
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    .nav-buttons button {
+      width: 48%;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .loading::after {
+      content: "処理中...";
+      display: inline-block;
+      animation: ellipsis 1.5s infinite;
+    }
+    @keyframes ellipsis {
+      0% { content: "処理中."; }
+      33% { content: "処理中.."; }
+      66% { content: "処理中..."; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>フォーム生成</h1>
+    
+    <div class="form-group">
+      <label for="templateType">テンプレートタイプ:</label>
+      <select id="templateType">
+        <option value="">テンプレートを選択してください</option>
+        <!-- テンプレートタイプはJavaScriptで動的に追加されます -->
+      </select>
+    </div>
+    
+    <button id="generateButton" onclick="generateForm()">フォームを生成</button>
+    
+    <div id="loading" class="loading"></div>
+    
+    <div id="resultSuccess" class="result success">
+      <h3>フォーム生成に成功しました</h3>
+      <p id="formTitle"></p>
+      <div class="form-link">
+        <p>以下のリンクからフォームにアクセスできます：</p>
+        <a id="formLink" href="#" target="_blank">フォームを開く</a>
+      </div>
+    </div>
+    
+    <div id="resultError" class="result error">
+      <h3>エラーが発生しました</h3>
+      <p id="errorMessage"></p>
+    </div>
+    
+    <div class="nav-buttons">
+      <button onclick="goToFormList()">フォーム一覧へ</button>
+      <button onclick="goToMainMenu()">メインメニューへ</button>
+    </div>
+  </div>
+
+  <script>
+    // ページ読み込み時の処理
+    window.onload = function() {
+      // セッションIDの取得
+      const sessionId = localStorage.getItem('formLoginSessionId');
+      if (!sessionId) {
+        // セッションIDがない場合はログイン画面にリダイレクト
+        redirectToLogin();
+        return;
+      }
+      
+      // テンプレートタイプの取得
+      loadTemplateTypes();
+    };
+    
+    // テンプレートタイプを取得して選択肢に追加
+    function loadTemplateTypes() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showLoading(false);
+          
+          if (result.success) {
+            const select = document.getElementById('templateType');
+            // 既存のオプションをクリア（最初の「選択してください」以外）
+            while (select.options.length > 1) {
+              select.remove(1);
+            }
+            
+            // テンプレートタイプを追加
+            result.templates.forEach(function(template) {
+              const option = document.createElement('option');
+              option.value = template;
+              option.textContent = template;
+              select.appendChild(option);
+            });
+            
+            // テンプレートがない場合の処理
+            if (result.templates.length === 0) {
+              const option = document.createElement('option');
+              option.value = "";
+              option.textContent = "利用可能なテンプレートがありません";
+              option.disabled = true;
+              select.appendChild(option);
+              
+              document.getElementById('generateButton').disabled = true;
+            }
+          } else {
+            showError(result.error || 'テンプレート情報の取得に失敗しました');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showError('エラーが発生しました: ' + error);
+        })
+        .getTemplateTypes();
+    }
+    
+    // フォーム生成処理
+    function generateForm() {
+      const templateType = document.getElementById('templateType').value;
+      if (!templateType) {
+        showError('テンプレートタイプを選択してください');
+        return;
+      }
+      
+      const sessionId = localStorage.getItem('formLoginSessionId');
+      if (!sessionId) {
+        redirectToLogin();
+        return;
+      }
+      
+      // ボタンを無効化
+      document.getElementById('generateButton').disabled = true;
+      showLoading(true);
+      hideResults();
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          document.getElementById('generateButton').disabled = false;
+          showLoading(false);
+          
+          if (result.success) {
+            // 成功時の処理
+            document.getElementById('formTitle').textContent = result.formTitle;
+            const formLink = document.getElementById('formLink');
+            formLink.href = result.formUrl;
+            formLink.textContent = result.formUrl;
+            
+            document.getElementById('resultSuccess').style.display = 'block';
+          } else {
+            // エラー時の処理
+            showError(result.error || 'フォーム生成に失敗しました');
+          }
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('generateButton').disabled = false;
+          showLoading(false);
+          showError('エラーが発生しました: ' + error);
+        })
+        .createUserForm(templateType, sessionId);
+    }
+    
+    // フォーム一覧画面へ遷移
+    function goToFormList() {
+      showLoading(true);
+      
+      google.script.run
+        .withSuccessHandler(function(htmlContent) {
+          document.open();
+          document.write(htmlContent);
+          document.close();
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showError('画面遷移に失敗しました: ' + error);
+        })
+        .getFormListPage();
+    }
+    
+    // メインメニュー画面へ遷移（未実装の場合はログイン画面へ）
+    function goToMainMenu() {
+      showLoading(true);
+      
+      // メインメニューが実装されていない場合はログイン後画面に遷移
+      google.script.run
+        .withSuccessHandler(function(htmlContent) {
+          document.open();
+          document.write(htmlContent);
+          document.close();
+        })
+        .withFailureHandler(function(error) {
+          showLoading(false);
+          showError('画面遷移に失敗しました: ' + error);
+        })
+        .getMainMenuPage();
+    }
+    
+    // ログイン画面へリダイレクト
+    function redirectToLogin() {
+      google.script.run
+        .withSuccessHandler(function(redirectUrl) {
+          window.top.location.href = redirectUrl;
+        })
+        .redirectToLogin();
+    }
+    
+    // エラーメッセージの表示
+    function showError(message) {
+      document.getElementById('errorMessage').textContent = message;
+      document.getElementById('resultError').style.display = 'block';
+      document.getElementById('resultSuccess').style.display = 'none';
+    }
+    
+    // 結果表示領域を非表示
+    function hideResults() {
+      document.getElementById('resultError').style.display = 'none';
+      document.getElementById('resultSuccess').style.display = 'none';
+    }
+    
+    // ローディング表示の切り替え
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

@@ -19,15 +19,22 @@ function doGet(e) {
   // ページに応じて適切なHTMLを返却
   if (page === 'signup') {
     htmlOutput = HtmlService.createHtmlOutputFromFile('signup');
+    htmlOutput.setTitle('フォーム管理システム - 新規登録');
+  } else if (page === 'generate') {
+    htmlOutput = HtmlService.createHtmlOutputFromFile('formGenerate');
+    htmlOutput.setTitle('フォーム管理システム - フォーム生成');
+  } else if (page === 'list') {
+    htmlOutput = HtmlService.createHtmlOutputFromFile('formList');
+    htmlOutput.setTitle('フォーム管理システム - フォーム一覧');
   } else {
     // デフォルトはログイン画面
     htmlOutput = HtmlService.createHtmlOutputFromFile('login');
+    htmlOutput.setTitle('フォーム管理システム - ログイン');
   }
   
   // サンドボックスモードとタイトルを設定
   htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   htmlOutput.setSandboxMode(HtmlService.SandboxMode.IFRAME);
-  htmlOutput.setTitle('フォーム管理システム');
   
   return htmlOutput;
 }
@@ -173,6 +180,72 @@ function redirectToLogin() {
     console.error('リダイレクトURLの取得中にエラーが発生:', error);
     // エラーの場合は空の文字列を返す
     return '';
+  }
+}
+
+/**
+ * フォーム生成ページのHTMLを取得する関数
+ * ログイン後の画面遷移用
+ * @return {string} フォーム生成ページのHTMLソース
+ */
+function getFormGeneratePage() {
+  // ログ出力
+  console.log('フォーム生成ページの取得を開始');
+  
+  try {
+    // formGenerate.htmlファイルの内容を取得
+    var htmlOutput = HtmlService.createHtmlOutputFromFile('formGenerate');
+    var htmlContent = htmlOutput.getContent();
+    
+    console.log('フォーム生成ページの取得成功');
+    return htmlContent;
+  } catch (error) {
+    console.error('フォーム生成ページの取得中にエラーが発生:', error);
+    throw new Error('フォーム生成ページの取得に失敗しました: ' + error.message);
+  }
+}
+
+/**
+ * フォーム一覧ページのHTMLを取得する関数
+ * ログイン後の画面遷移用
+ * @return {string} フォーム一覧ページのHTMLソース
+ */
+function getFormListPage() {
+  // ログ出力
+  console.log('フォーム一覧ページの取得を開始');
+  
+  try {
+    // formList.htmlファイルの内容を取得
+    var htmlOutput = HtmlService.createHtmlOutputFromFile('formList');
+    var htmlContent = htmlOutput.getContent();
+    
+    console.log('フォーム一覧ページの取得成功');
+    return htmlContent;
+  } catch (error) {
+    console.error('フォーム一覧ページの取得中にエラーが発生:', error);
+    throw new Error('フォーム一覧ページの取得に失敗しました: ' + error.message);
+  }
+}
+
+/**
+ * メインメニューページのHTMLを取得する関数
+ * 各画面からの遷移用（現状はフォーム一覧画面を代用）
+ * @return {string} メインメニューページのHTMLソース
+ */
+function getMainMenuPage() {
+  // ログ出力
+  console.log('メインメニューページの取得を開始');
+  
+  try {
+    // 現状はフォーム一覧ページをメインメニューとして使用
+    var htmlOutput = HtmlService.createHtmlOutputFromFile('formList');
+    var htmlContent = htmlOutput.getContent();
+    
+    console.log('メインメニューページの取得成功');
+    return htmlContent;
+  } catch (error) {
+    console.error('メインメニューページの取得中にエラーが発生:', error);
+    throw new Error('メインメニューページの取得に失敗しました: ' + error.message);
   }
 }
 
