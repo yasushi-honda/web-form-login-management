@@ -113,6 +113,14 @@
   </div>
   
   <script>
+    // ページ読み込み時に実行
+    window.onload = function() {
+      // メールアドレスはユーザーが手入力で対応
+      console.log('サインアップ画面を初期化しました');
+      // 入力フォームにフォーカスを当てる
+      document.getElementById('email').focus();
+    };
+    
     // エラー表示関数
     function showError(msg) {
       const errorDiv = document.getElementById('error');
@@ -200,8 +208,25 @@
     // ログイン画面へのリンク
     document.getElementById('loginLink').addEventListener('click', function(e) {
       e.preventDefault();
-      // GASのHTMLサービスでホストされている場合、ルートURLに戻る
-      window.location.href = './';
+      // ログイン画面を表示する
+      try {
+        console.log('ログイン画面への遷移を開始します');
+        // ボタンを無効化して重複クリックを防止
+        this.disabled = true;
+        
+        // GAS WebアプリのルートURLにリダイレクト
+        // 現在のURLからクエリパラメータを除去してルートURLを取得
+        var currentUrl = window.location.href;
+        var baseUrl = currentUrl.split('?')[0];
+        
+        // ルートURLにリダイレクト
+        console.log('ログイン画面にリダイレクトします: ' + baseUrl);
+        window.top.location.href = baseUrl;
+      } catch (err) {
+        console.error('ログイン画面遷移処理エラー:', err);
+        alert('エラーが発生しました: ' + err.message);
+        document.getElementById('loginLink').disabled = false;
+      }
     });
   </script>
 </body>

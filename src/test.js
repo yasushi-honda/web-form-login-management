@@ -120,6 +120,37 @@ function processLogin(id, password) {
  * システムの動作確認用にスプレッドシートの確認、ユーザー登録、ログインを順番に実行する。
  * @return {Object} 登録とログインの結果情報
  */
+/**
+ * ログインページを表示する関数
+ * サインアップページからの遷移用
+ * @return {GoogleAppsScript.HTML.HtmlOutput} ログインページのHtmlOutputオブジェクト
+ */
+function getLoginPage() {
+  // ログ出力
+  console.log('ログインページの取得を開始');  
+  
+  try {
+    // login.htmlファイルからHtmlOutputオブジェクトを作成
+    var htmlOutput = HtmlService.createHtmlOutputFromFile('login');
+    
+    // サンドボックスモードとタイトルを設定
+    htmlOutput.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    htmlOutput.setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    htmlOutput.setTitle('フォーム管理システム - ログイン');
+    
+    console.log('ログインページの取得成功');
+    return htmlOutput;
+  } catch (error) {
+    console.error('ログインページの取得中にエラーが発生:', error);
+    throw new Error('ログインページの取得に失敗しました: ' + error.message);
+  }
+}
+
+/**
+ * テスト用関数：ユーザー登録とログインの一連のフローをテスト
+ * システムの動作確認用にスプレッドシートの確認、ユーザー登録、ログインを順番に実行する。
+ * @return {Object} 登録とログインの結果情報
+ */
 function testUserRegistrationAndLogin() {
   console.log('【テスト開始】ユーザー登録とログインの一連テストを開始します');
   
